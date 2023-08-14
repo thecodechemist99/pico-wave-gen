@@ -1,8 +1,6 @@
 //! Module for communication with remote control GUI for the
 //! Arbitrary Waveform Generator
 
-// pub use wave_gen::{Config, DACPins, DACResolution, GeneratorFunction, SampleBuffer, Wave};
-
 // Low-level traits
 use core::{default::Default, option::Option};
 use cortex_m::singleton;
