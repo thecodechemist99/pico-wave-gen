@@ -54,6 +54,8 @@
 //! [instructables article]: https://www.instructables.com/Arbitrary-Wave-Generator-With-the-Raspberry-Pi-Pic/
 //! [modifications]: https://www.instructables.com/Poor-Mans-Waveform-Generator-Based-on-RP2040-Raspb/
 
+pub mod serial;
+
 // Low-level traits
 use core::{
     array,
