@@ -313,7 +313,7 @@ where
         }
     }
 
-    pub fn setup(&mut self, wave: Wave, buf: &mut SampleBuffer, freq: HertzU32) {
+    pub fn setup(&mut self, wave: Wave, buf: &mut SampleBuffer, freq: HertzU32) -> (usize, u32) {
         let clk_freq = uint_to_float(self.clk_freq.raw());
         let freq = uint_to_float(freq.raw());
         let buf_size = uint_to_float(buf.len() as u32);
@@ -384,6 +384,16 @@ where
 
         // Start DMA
         self.start_dma(buf, buf_len as u32 / 4);
+
+        let freq_out = float_to_uint(fmul(
+            fdiv(
+                fdiv(clk_freq, uint_to_float(clk_div_int)),
+                uint_to_float(buf_len as u32),
+            ),
+            uint_to_float(duplicate),
+        ));
+
+        (buf_len, freq_out)
     }
 
     /// Start 2-channel chained DMA.

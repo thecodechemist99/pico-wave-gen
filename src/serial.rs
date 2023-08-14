@@ -48,7 +48,6 @@ pub enum ConnStatusFlag {
 /// - [ConnReset](DeviceStatusFlag::ConnReset): Connection reset by remote UI
 /// - [Error](DeviceStatusFlag::Error): An error occured
 #[derive(Serialize)]
-#[allow(unused)]
 pub enum DeviceStatusFlag {
     Init,
     CalcWave,
@@ -155,18 +154,11 @@ where
             })
             .unwrap();
 
-            conf.setup(request.wave, wave_buf, request.freq.Hz());
+            let setup_status = conf.setup(request.wave, wave_buf, request.freq.Hz());
 
-            // let setup_status = setup_wave(wavbuf[0], self.wave);
-
-            // setup_wave returned to main program
-
-            // setup_wave returns awg_status, buf_len and freq_out
-            // self.awg_status = AWGStatus {
-            //     status: setup_status[0],
-            //     buf_len: setup_status[1],
-            //     freq_out: setup_status[2],
-            // };
+            device_status.status = DeviceStatusFlag::Running;
+            device_status.buf_len = setup_status.0 as u32;
+            device_status.freq_out = setup_status.1;
 
             // Send status to remote UI
             Response::DeviceStatus(device_status)
