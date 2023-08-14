@@ -18,7 +18,7 @@ use serde::{Deserialize, Serialize};
 use fugit::RateExtU32;
 
 // Crate level traits
-use crate::{GeneratorFunction, SampleBuffer, Wave};
+use crate::{Config, GeneratorFunction, SampleBuffer, Wave};
 
 // Setup consts
 const VERSION: &str = env!("CARGO_PKG_VERSION");
