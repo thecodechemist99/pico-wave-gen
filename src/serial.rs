@@ -4,6 +4,7 @@
 // pub use wave_gen::{Config, DACPins, DACResolution, GeneratorFunction, SampleBuffer, Wave};
 
 // Low-level traits
+use core::{default::Default, option::Option};
 use cortex_m::singleton;
 
 // Pico traits
@@ -17,7 +18,7 @@ use serde::{Deserialize, Serialize};
 use fugit::RateExtU32;
 
 // Crate level traits
-use crate::{GeneratorFunction, Wave};
+use crate::{GeneratorFunction, SampleBuffer, Wave};
 
 // Setup consts
 const VERSION: &str = env!("CARGO_PKG_VERSION");
