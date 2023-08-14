@@ -1,3 +1,5 @@
+#![no_std]
+
 //! Arbitrary waveform generator for the Raspberry Pi Pico.
 //!
 //! Allows the construction, manipulation, combination, and output of arbitrary
@@ -53,8 +55,7 @@
 //!
 //! [instructables article]: https://www.instructables.com/Arbitrary-Wave-Generator-With-the-Raspberry-Pi-Pic/
 //! [modifications]: https://www.instructables.com/Poor-Mans-Waveform-Generator-Based-on-RP2040-Raspb/
-
-#![no_std]
+//!
 pub mod serial;
 
 // Low-level traits
