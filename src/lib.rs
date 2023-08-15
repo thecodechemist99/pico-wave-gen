@@ -56,18 +56,23 @@
 //! [instructables article]: https://www.instructables.com/Arbitrary-Wave-Generator-With-the-Raspberry-Pi-Pic/
 //! [modifications]: https://www.instructables.com/Poor-Mans-Waveform-Generator-Based-on-RP2040-Raspb/
 //!
+
+#[cfg(feature = "serial")]
 pub mod serial;
 
+mod functions;
+
 // Low-level traits
+#[cfg(feature = "pico")]
 use core::{
     array,
     cmp::{max, min},
-    f32::consts::PI,
     ptr,
     slice::IterMut,
 };
 
 // Pico traits
+#[cfg(feature = "pico")]
 use rp_pico::hal::{
     dma::SingleChannel,
     gpio::{DynFunction::Pio0, DynPin, DynPinMode::Function},
@@ -76,22 +81,26 @@ use rp_pico::hal::{
         StateMachineIndex, Tx, UninitStateMachine, PIO,
     },
     rom_data::float_funcs::{
-        fadd, fcmp, fdiv, fexp, float_to_int, float_to_uint, fmul, fsin, fsub, int_to_float,
-        uint_to_float,
+        fadd, fcmp, fdiv, float_to_uint, fmul, fsub, int_to_float, uint_to_float,
     },
 };
 
 // Math and number related traits
+#[cfg(feature = "pico")]
 use fugit::HertzU32;
 
+// Crate internal traits
+#[cfg(feature = "pico")]
+use functions::*;
+
 /// Supported DAC resolutions
-#[allow(unused)]
 #[repr(u32)]
 pub enum DACResolution {
     BIT8 = 8,
     BIT10 = 10,
 }
 
+#[cfg(feature = "pico")]
 impl DACResolution {
     /// Returns the size in bits
     fn get_size(&self) -> u32 {
@@ -111,6 +120,7 @@ impl DACResolution {
 }
 
 /// Constructor for enums with equally typed array variants
+#[cfg(feature = "pico")]
 macro_rules! define_enum_of_arrays {
     (#[doc = $doc:expr] $scope:vis $enum:ident: $type:ty { $($variant:ident($len:expr)),* }) => {
         #[doc = $doc]
@@ -149,6 +159,7 @@ macro_rules! define_enum_of_arrays {
     };
 }
 
+#[cfg(feature = "pico")]
 define_enum_of_arrays! {
     /// Type declaration for DAC pin arrays
     pub DACPins: DynPin {
@@ -157,6 +168,7 @@ define_enum_of_arrays! {
     }
 }
 
+#[cfg(feature = "pico")]
 define_enum_of_arrays! {
     /// Type declaration for sample buffer sizes
     pub SampleBuffer: u32 {
@@ -255,6 +267,7 @@ impl Wave {
     }
 
     /// Evaluate the content of a wave
+    #[cfg(feature = "pico")]
     fn eval(&self, mut x: f32) -> f32 {
         x = fsub(fmul(x, int_to_float(self.replicate)), self.phase);
         x = fsub(x, floorf(x)); // Reduce x to 0.0-1.0 range
@@ -272,6 +285,7 @@ impl Wave {
 }
 
 /// Arbitrary waveform generator configuration
+#[cfg(feature = "pico")]
 pub struct Config<CH1, CH2, P, I>
 where
     CH1: SingleChannel,
@@ -286,6 +300,7 @@ where
     tx_buf: Tx<(P, I)>,
 }
 
+#[cfg(feature = "pico")]
 impl<CH1, CH2, P, I> Config<CH1, CH2, P, I>
 where
     CH1: SingleChannel,
@@ -500,6 +515,7 @@ where
 }
 
 /// Setup PIO peripheral for AWG
+#[cfg(feature = "pico")]
 fn setup_pio<P, I>(
     pio: &mut PIO<P>,
     mut pins: DACPins,
@@ -550,76 +566,4 @@ where
         }
     }
     (sm.start(), tx)
-}
-
-/// Memory efficient flooring implementation
-fn floorf(x: f32) -> f32 {
-    let x = float_to_int(x);
-    int_to_float(match x {
-        0.. => x,
-        _ => x - 1,
-    })
-}
-
-/// Calculate the nth power of a floating point number
-fn nth_power(x: f32, n: u32) -> f32 {
-    match n {
-        0 => 1.0,
-        _ => fmul(x, nth_power(x, n - 1)),
-    }
-}
-
-/// Sine waveform generator function
-#[allow(unused)]
-pub fn sine(x: f32) -> f32 {
-    fsin(fmul(x, fmul(2.0, PI)))
-}
-
-/// Pulse waveform generator function
-///
-/// Parameters:
-/// - Rise time
-/// - High time
-/// - Fall time
-#[allow(unused)]
-pub fn pulse(x: f32, p: [f32; 3]) -> f32 {
-    if x < p[0] {
-        fdiv(x, p[0])
-    } else if x < fadd(p[0], p[1]) {
-        1.0
-    } else if x < fadd(p[0], fadd(p[1], p[2])) {
-        fsub(1.0, fdiv(fsub(x, fsub(p[0], p[1])), p[2]))
-    } else {
-        1.0
-    }
-}
-
-/// Gaussian waveform generator function
-///
-/// Parameters:
-/// - Time
-#[allow(unused)]
-pub fn gaussian(x: f32, p: f32) -> f32 {
-    fexp(nth_power(-(fdiv(fsub(x, 0.5), p)), 2))
-}
-
-/// Sinc waveform generator function
-///
-/// Parameters:
-/// - Time
-#[allow(unused)]
-pub fn sinc(x: f32, p: f32) -> f32 {
-    match float_to_uint(x) * 2 {
-        1 => 1.0,
-        _ => fdiv(fsin(fdiv(fsub(x, 0.5), p)), fdiv(fsub(x, 0.5), p)),
-    }
-}
-
-/// Exponential waveform generator function
-///
-/// Parameters:
-/// - Time
-#[allow(unused)]
-pub fn exponential(x: f32, p: f32) -> f32 {
-    fexp(fdiv(-x, p))
 }
