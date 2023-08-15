@@ -120,11 +120,11 @@ struct WaveDef {
 
 #[derive(Serialize, Deserialize)]
 pub struct Request<'a> {
-    command: &'a str,
-    freq: u32,
-    buf_size: u32,
+    pub command: &'a str,
+    pub freq: u32,
+    pub buf_size: u32,
     #[serde(with = "WaveDef")]
-    wave: Wave,
+    pub wave: Wave,
 }
 
 #[cfg(feature = "pico")]

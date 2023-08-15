@@ -197,6 +197,7 @@ pub enum GeneratorFunction {
 
 impl FromStr for GeneratorFunction {
     type Err = ();
+
     fn from_str(name: &str) -> Result<Self, Self::Err> {
         match name {
             "Sine" => Ok(GeneratorFunction::SINE),
