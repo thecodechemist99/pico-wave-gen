@@ -2,7 +2,6 @@
 //! arbitrary waveform generator
 
 // Low-level traits
-// use core::{default::Default, option::Option};
 #[cfg(feature = "pico")]
 use cortex_m::singleton;
 
