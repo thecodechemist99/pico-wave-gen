@@ -60,6 +60,7 @@
 #[cfg(feature = "serial")]
 pub mod serial;
 
+#[cfg(feature = "pico")]
 mod functions;
 
 // Low-level traits
