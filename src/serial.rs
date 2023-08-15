@@ -2,10 +2,12 @@
 //! arbitrary waveform generator
 
 // Low-level traits
-use core::{default::Default, option::Option};
+// use core::{default::Default, option::Option};
+#[cfg(feature = "pico")]
 use cortex_m::singleton;
 
 // Pico traits
+#[cfg(feature = "pico")]
 use rp_pico::hal::{
     dma::SingleChannel,
     pio::{PIOExt, StateMachineIndex},
@@ -13,10 +15,13 @@ use rp_pico::hal::{
 use serde::{Deserialize, Serialize};
 
 // Math and number related traits
+#[cfg(feature = "pico")]
 use fugit::RateExtU32;
 
 // Crate level traits
-use crate::{Config, GeneratorFunction, SampleBuffer, Wave};
+#[cfg(feature = "pico")]
+use crate::{Config, SampleBuffer};
+use crate::{GeneratorFunction, Wave};
 
 // Setup consts
 const VERSION: &str = env!("CARGO_PKG_VERSION");
@@ -123,6 +128,7 @@ pub struct Request<'a> {
     wave: Wave,
 }
 
+#[cfg(feature = "pico")]
 pub fn receive<'a, CH1, CH2, P, I>(conf: &mut Config<CH1, CH2, P, I>, buf: &[u8]) -> Response<'a>
 where
     CH1: SingleChannel,
