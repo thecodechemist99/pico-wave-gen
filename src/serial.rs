@@ -1,5 +1,5 @@
 //! Module for communication with remote control GUI for the
-//! Arbitrary Waveform Generator
+//! arbitrary waveform generator
 
 // Low-level traits
 use core::{default::Default, option::Option};
