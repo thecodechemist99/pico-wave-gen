@@ -7,27 +7,34 @@ edition = "2021"
 
 [features]
 default = ["pico"]
-pico = []
-serial = []
+pico = [
+  "dep:cortex-m",
+  "dep:rp-pico",
+  "dep:fugit",
+  "dep:pio-proc",
+  "dep:pio",
+  "dep:defmt"
+]
+serial = ["dep:serde", "dep:serde-json-core"]
 
 [dependencies]
 # Core dependencies
 # inline-asm feature will be enabled by default from version 0.8
 # cortex-m = { version = "0.7", features = ["inline-asm"] }
-cortex-m = { version = "0.7" }
-rp-pico = "0.7"
-fugit = "0.3"
+cortex-m = { version = "0.7", optional = true }
+rp-pico = { version = "0.7", optional = true }
+fugit = { version = "0.3", optional = true }
 
 # PIO ASM dependencies
-pio-proc = "0.2"
-pio = "0.2"
+pio-proc = { version = "0.2", optional = true }
+pio = { version = "0.2", optional = true }
 
 # Data serialization
-serde = { version = "1.0", default-features = false, features = ["derive"] }
-serde-json-core = "0.5"
+serde = { version = "1.0", default-features = false, features = ["derive"], optional = true }
+serde-json-core = { version = "0.5", optional = true }
 
 # Dependencies for debug probe
-defmt = "0.3.2"
+defmt = { version = "0.3.2", optional = true }
 
 [profile.dev]
 opt-level = "s"
