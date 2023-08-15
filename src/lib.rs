@@ -64,6 +64,7 @@ pub mod serial;
 mod functions;
 
 // Low-level traits
+use core::str::FromStr;
 #[cfg(feature = "pico")]
 use core::{
     array,
@@ -192,6 +193,20 @@ pub enum GeneratorFunction {
     GAUSSIAN,
     SINC,
     EXPONENTIAL,
+}
+
+impl FromStr for GeneratorFunction {
+    type Err = ();
+    fn from_str(name: &str) -> Result<Self, Self::Err> {
+        match name {
+            "Sine" => Ok(GeneratorFunction::SINE),
+            "Pulse" => Ok(GeneratorFunction::PULSE),
+            "Gaussian" => Ok(GeneratorFunction::GAUSSIAN),
+            "Sinc" => Ok(GeneratorFunction::SINC),
+            "Exponential" => Ok(GeneratorFunction::EXPONENTIAL),
+            _ => Err(()),
+        }
+    }
 }
 
 /// Arbitrary waveform specification
