@@ -76,7 +76,7 @@ use core::{
 // Pico traits
 #[cfg(feature = "pico")]
 use rp2040_hal::{
-    dma::SingleChannel,
+    dma::{double_buffer, ReadTarget, SingleChannel},
     gpio::{DynPinId, FunctionPio0, Pin, PullNone},
     pio::{
         PIOBuilder, PIOExt, PinDir, PinState, Running, ShiftDirection::Right, StateMachine,
@@ -183,6 +183,24 @@ define_enum_of_arrays! {
         B16K(16_384),
         B32K(32_768),
         B64k(65_536)
+    }
+}
+
+// Configure sample buffer for dma
+unsafe impl ReadTarget for SampleBuffer {
+    type ReceivedWord = u32;
+
+    fn rx_treq() -> Option<u8> {
+        None
+    }
+
+    fn rx_address_count(&self) -> (u32, u32) {
+        // Define global object for known address?
+        ()
+    }
+
+    fn rx_increment(&self) -> bool {
+        true
     }
 }
 
@@ -434,6 +452,19 @@ where
         // Disable the DMAs to prevent corruption while writing
         self.stop_dma();
 
+        // Setup DMA transfer
+
+        let wave_buf_ptr = buf as *mut SampleBuffer; // Convert mutable ref to a raw pointer and memory address, successively
+        let tx_buf_addr = self.tx_buf.fifo_address() as u32;
+
+        let tx_conf = double_buffer::Config::new(self.dma, buf, self.tx_buf);
+        let tx_transfer = tx_conf.start();
+
+        // let mut tx_transfer = tx_transfer.read_next(buf);
+
+        let wave_buf_ptr_addr = ptr::addr_of!(wave_buf_ptr) as u32;
+        let ch1_read_addr = self.dma.0.ch().ch_read_addr.as_ptr() as u32;
+
         // Setup fist DMA channel
         let wave_buf_ptr = buf as *mut SampleBuffer; // Convert mutable ref to a raw pointer and memory address, successively
         let tx_buf_addr = self.tx_buf.fifo_address() as u32;
@@ -456,7 +487,7 @@ where
 
         let irq_quiet: u32 = 1; // Do not generate an interrupt
         let treq_sel: u32 = 0; // Wait for PIO0_TX0
-        let chain_to: u32 = 3; // Start channel 3 when done
+        let chain_to: u32 = 2; // Start channel 2 when done
         let ring_sel: u32 = 0;
         let ring_size: u32 = 0; // No wrapping
         let incr_write: u32 = 0; // For write to array
@@ -484,7 +515,7 @@ where
 
         // Setup second DMA channel
         let wave_buf_ptr_addr = ptr::addr_of!(wave_buf_ptr) as u32;
-        let ch0_read_addr = self.dma.0.ch().ch_read_addr.as_ptr() as u32;
+        let ch1_read_addr = self.dma.0.ch().ch_read_addr.as_ptr() as u32;
 
         self.dma
             .1
@@ -495,7 +526,7 @@ where
             .1
             .ch()
             .ch_write_addr
-            .write(|w| unsafe { w.bits(ch0_read_addr) });
+            .write(|w| unsafe { w.bits(ch1_read_addr) });
         self.dma
             .1
             .ch()
