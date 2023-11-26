@@ -1,6 +1,6 @@
 [package]
 name = "pico-wave-gen"
-version = "0.1.0"
+version = "0.1.1"
 license = "CC BY-NC-SA 4.0"
 authors = [ "Florian Beck <info@florian-beck.de>" ]
 edition = "2021"
@@ -22,7 +22,7 @@ serial = ["dep:serde", "dep:serde-json-core"]
 # inline-asm feature will be enabled by default from version 0.8
 # cortex-m = { version = "0.7", features = ["inline-asm"] }
 cortex-m = { version = "0.7", optional = true }
-rp-pico = { version = "0.7", optional = true }
+rp-pico = { version = "0.8", optional = true }
 fugit = { version = "0.3", optional = true }
 
 # PIO ASM dependencies

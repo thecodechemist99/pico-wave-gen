@@ -77,7 +77,7 @@ use core::{
 #[cfg(feature = "pico")]
 use rp_pico::hal::{
     dma::SingleChannel,
-    gpio::{DynFunction::Pio0, DynPin, DynPinMode::Function},
+    gpio::{DynPinId, FunctionPio0, Pin, PullNone},
     pio::{
         PIOBuilder, PIOExt, PinDir, PinState, Running, ShiftDirection::Right, StateMachine,
         StateMachineIndex, Tx, UninitStateMachine, PIO,
@@ -164,7 +164,7 @@ macro_rules! define_enum_of_arrays {
 #[cfg(feature = "pico")]
 define_enum_of_arrays! {
     /// Type declaration for DAC pin arrays
-    pub DACPins: DynPin {
+    pub DACPins: Pin<DynPinId, FunctionPio0, PullNone> {
         BIT8(8),
         BIT10(10)
     }
@@ -544,11 +544,11 @@ where
 {
     let program = pio_proc::pio_asm!("out pins, 8"); // TODO: Allow for other bitrates
 
-    // Change pin state from dynamic to PIO pins
-    // TODO: Make generic regarding used PIO
-    for pin in pins.iter_mut() {
-        pin.try_into_mode(Function(Pio0)).unwrap();
-    }
+    // // Change pin state from dynamic to PIO pins
+    // // TODO: Make generic regarding used PIO
+    // for pin in pins.iter_mut() {
+    //     pin.try_into_function::<FunctionPio0>();
+    // }
 
     // Setup PIO
     let installed = pio.install(&program.program).unwrap();
