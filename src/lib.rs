@@ -429,7 +429,7 @@ where
     }
 
     /// Start 2-channel chained DMA.
-    /// Channel 2 does the transfer, channel 3 reconfigures.
+    /// Channel 1 does the transfer, channel 2 reconfigures.
     fn start_dma(&self, buf: &mut SampleBuffer, word_count: u32) {
         // Disable the DMAs to prevent corruption while writing
         self.stop_dma();
@@ -464,7 +464,7 @@ where
         let data_size: u32 = 2; // 32-bit word transfer
         let high_priority: u32 = 1;
         let en: u32 = 1;
-        let ch2_ctrl = (irq_quiet << 21)
+        let ch1_ctrl = (irq_quiet << 21)
             | (treq_sel << 15)
             | (chain_to << 11)
             | (ring_sel << 10)
@@ -480,7 +480,7 @@ where
             .0
             .ch()
             .ch_al1_ctrl
-            .write(|w| unsafe { w.bits(ch2_ctrl) });
+            .write(|w| unsafe { w.bits(ch1_ctrl) });
 
         // Setup second DMA channel
         let wave_buf_ptr_addr = ptr::addr_of!(wave_buf_ptr) as u32;
@@ -506,7 +506,7 @@ where
         let chain_to: u32 = 2; // Start channel 2 when done
         let incr_write: u32 = 0; // Single write
         let incr_read: u32 = 0; // Single read
-        let ch3_ctrl = (irq_quiet << 21)
+        let ch2_ctrl = (irq_quiet << 21)
             | (treq_sel << 15)
             | (chain_to << 11)
             | (ring_sel << 10)
@@ -522,7 +522,7 @@ where
             .1
             .ch()
             .ch_ctrl_trig
-            .write(|w| unsafe { w.bits(ch3_ctrl) });
+            .write(|w| unsafe { w.bits(ch2_ctrl) });
     }
 
     pub fn stop_dma(&self) {
