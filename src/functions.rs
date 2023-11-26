@@ -4,7 +4,7 @@
 use core::f32::consts::PI;
 
 // Pico traits
-use rp_pico::hal::rom_data::float_funcs::{
+use rp2040_hal::rom_data::float_funcs::{
     fadd, fdiv, fexp, float_to_int, float_to_uint, fmul, fsin, fsub, int_to_float,
 };
 

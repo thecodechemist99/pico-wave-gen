@@ -75,7 +75,7 @@ use core::{
 
 // Pico traits
 #[cfg(feature = "pico")]
-use rp_pico::hal::{
+use rp2040_hal::{
     dma::SingleChannel,
     gpio::{DynPinId, FunctionPio0, Pin, PullNone},
     pio::{

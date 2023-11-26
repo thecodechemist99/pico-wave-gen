@@ -9,7 +9,8 @@ edition = "2021"
 default = ["pico"]
 pico = [
   "dep:cortex-m",
-  "dep:rp-pico",
+  "dep:rp2040-hal",
+  # "dep:rp-pico",
   "dep:fugit",
   "dep:pio-proc",
   "dep:pio",
@@ -22,7 +23,8 @@ serial = ["dep:serde", "dep:serde-json-core"]
 # inline-asm feature will be enabled by default from version 0.8
 # cortex-m = { version = "0.7", features = ["inline-asm"] }
 cortex-m = { version = "0.7", optional = true }
-rp-pico = { version = "0.8", optional = true }
+rp2040-hal = { version = "0.9", optional = true }
+# rp-pico = { version = "0.8", optional = true }
 fugit = { version = "0.3", optional = true }
 
 # PIO ASM dependencies
