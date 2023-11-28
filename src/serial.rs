@@ -38,7 +38,7 @@ pub enum Response<'a> {
 /// Connection status flag:
 /// - [NotConnected](ConnStatusFlag::NotConnected): Not connected to remote UI
 /// - [Connected](ConnStatusFlag::Connected): Connected to remote UI
-#[derive(Serialize, Deserialize)]
+#[derive(Serialize, Debug, Deserialize)]
 #[allow(unused)]
 pub enum ConnStatusFlag {
     NotConnected,
@@ -52,7 +52,7 @@ pub enum ConnStatusFlag {
 /// - [Stopped](DeviceStatusFlag::Stopped): Generator output stopped, new set up trigger is allowed, initialisation status
 /// - [ConnReset](DeviceStatusFlag::ConnReset): Connection reset by remote UI
 /// - [Error](DeviceStatusFlag::Error): An error occured
-#[derive(Serialize, Deserialize)]
+#[derive(Serialize, Debug, Deserialize)]
 pub enum DeviceStatusFlag {
     Init,
     CalcWave,
@@ -80,7 +80,7 @@ impl<'a> Default for ConnStatus<'a> {
     }
 }
 
-#[derive(Serialize, Deserialize)]
+#[derive(Serialize, Debug, Deserialize)]
 pub struct DeviceStatus {
     status: DeviceStatusFlag,
     buf_len: u32,
@@ -107,7 +107,7 @@ enum GeneratorFunctionDef {
     EXPONENTIAL,
 }
 
-#[derive(Serialize, Deserialize)]
+#[derive(Serialize, Debug, Deserialize)]
 #[serde(remote = "Wave")]
 struct WaveDef {
     amplitude: f32,
