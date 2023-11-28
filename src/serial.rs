@@ -28,6 +28,7 @@ const VERSION: &str = env!("CARGO_PKG_VERSION");
 /// Response to remote UI
 ///
 /// Either of type [ConnStatus] or [DeviceStatus]
+#[derive(Debug)]
 #[allow(unused)]
 pub enum Response<'a> {
     ConnStatus(ConnStatus<'a>),
@@ -118,7 +119,7 @@ struct WaveDef {
     func: GeneratorFunction,
 }
 
-#[derive(Serialize, Deserialize)]
+#[derive(Serialize, Deserialize, Debug)]
 pub struct Request<'a> {
     pub command: &'a str,
     pub freq: u32,
@@ -198,24 +199,3 @@ where
         }
     }
 }
-
-// except KeyboardInterrupt:
-
-//     # set connection status and send to RemoteUI
-//     Conn_stat["version"] = "0.0.0"
-//     Conn_stat["connection"] = "closed"
-//     send(Conn_stat)
-//     connected = 0
-
-// except Exception as e:
-//     #print("0: mainloop crashed: ", e)
-//     led.on()
-//     Conn_stat["version"] = "mainloop crashed"
-//     Conn_stat["connection"] = e
-//     send(Conn_stat)
-//     connected = 0
-
-// finally:
-//     print("0: finally: cleaning up")
-//     stopDMA()
-//     #soft_reset()
