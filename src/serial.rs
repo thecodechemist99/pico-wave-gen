@@ -63,7 +63,7 @@ pub enum DeviceStatusFlag {
 }
 
 /// Connection status
-#[derive(Serialize, Deserialize)]
+#[derive(Serialize, Debug, Deserialize)]
 pub struct ConnStatus<'a> {
     status: ConnStatusFlag,
     version: &'a str,
@@ -107,7 +107,7 @@ enum GeneratorFunctionDef {
     EXPONENTIAL,
 }
 
-#[derive(Serialize, Debug, Deserialize)]
+#[derive(Serialize, Deserialize)]
 #[serde(remote = "Wave")]
 struct WaveDef {
     amplitude: f32,
@@ -119,7 +119,7 @@ struct WaveDef {
     func: GeneratorFunction,
 }
 
-#[derive(Serialize, Deserialize, Debug)]
+#[derive(Serialize, Debug, Deserialize)]
 pub struct Request<'a> {
     pub command: &'a str,
     pub freq: u32,

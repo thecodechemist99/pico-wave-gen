@@ -187,6 +187,7 @@ define_enum_of_arrays! {
 }
 
 /// Available generator functions
+#[derive(Debug)]
 pub enum GeneratorFunction {
     SINE,
     PULSE,
@@ -211,6 +212,7 @@ impl FromStr for GeneratorFunction {
 }
 
 /// Arbitrary waveform specification
+#[derive(Debug)]
 pub struct Wave {
     /// Amplitude of the waveform
     pub amplitude: f32,
