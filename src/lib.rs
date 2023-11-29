@@ -64,7 +64,7 @@ pub mod serial;
 mod functions;
 
 // Low-level traits
-use core::str::FromStr;
+// use core::str::FromStr;
 #[cfg(feature = "pico")]
 use core::{
     array,
@@ -80,7 +80,7 @@ use rp2040_hal::{
     gpio::{DynPinId, FunctionPio0, Pin, PullNone},
     pio::{
         PIOBuilder, PIOExt, PinDir, PinState, Running, ShiftDirection::Right, StateMachine,
-        StateMachineIndex, Stopped, Tx, UninitStateMachine, PIO,
+        StateMachineIndex, Tx, UninitStateMachine, PIO,
     },
     rom_data::float_funcs::{
         fadd, fcmp, fdiv, float_to_uint, fmul, fsub, int_to_float, uint_to_float,
@@ -196,20 +196,20 @@ pub enum GeneratorFunction {
     EXPONENTIAL,
 }
 
-impl FromStr for GeneratorFunction {
-    type Err = ();
+// impl FromStr for GeneratorFunction {
+//     type Err = ();
 
-    fn from_str(name: &str) -> Result<Self, Self::Err> {
-        match name {
-            "Sine" => Ok(GeneratorFunction::SINE),
-            "Pulse" => Ok(GeneratorFunction::PULSE),
-            "Gaussian" => Ok(GeneratorFunction::GAUSSIAN),
-            "Sinc" => Ok(GeneratorFunction::SINC),
-            "Exponential" => Ok(GeneratorFunction::EXPONENTIAL),
-            _ => Err(()),
-        }
-    }
-}
+//     fn from_str(name: &str) -> Result<Self, Self::Err> {
+//         match name {
+//             "Sine" => Ok(GeneratorFunction::SINE),
+//             "Pulse" => Ok(GeneratorFunction::PULSE),
+//             "Gaussian" => Ok(GeneratorFunction::GAUSSIAN),
+//             "Sinc" => Ok(GeneratorFunction::SINC),
+//             "Exponential" => Ok(GeneratorFunction::EXPONENTIAL),
+//             _ => Err(()),
+//         }
+//     }
+// }
 
 /// Arbitrary waveform specification
 #[derive(Debug)]
