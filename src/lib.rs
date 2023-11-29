@@ -291,27 +291,28 @@ impl Wave {
         x = fsub(fmul(x, int_to_float(self.replicate)), self.phase);
         x = fsub(x, floorf(x)); // Reduce x to 0.0-1.0 range
 
-        let mut v = match self.func {
-            GeneratorFunction::SINE => sine(x),
-            GeneratorFunction::PULSE => pulse(x, self.params.map(|p| unwrap_param(p))),
-            GeneratorFunction::GAUSSIAN => gaussian(x, unwrap_param(self.params[0])),
-            GeneratorFunction::SINC => sinc(x, unwrap_param(self.params[0])),
-            GeneratorFunction::EXPONENTIAL => exponential(x, unwrap_param(self.params[0])),
-        };
+        let mut v = calc_func(&self.func, x, self.params);
+        // let mut v = match self.func {
+        //     GeneratorFunction::SINE => sine(x),
+        //     GeneratorFunction::PULSE => pulse(x, self.params.map(|p| unwrap_param(p))),
+        //     GeneratorFunction::GAUSSIAN => gaussian(x, unwrap_param(self.params[0])),
+        //     GeneratorFunction::SINC => sinc(x, unwrap_param(self.params[0])),
+        //     GeneratorFunction::EXPONENTIAL => exponential(x, unwrap_param(self.params[0])),
+        // };
         v = fmul(v, self.amplitude);
         fadd(v, self.offset)
     }
 }
 
-// fn calc_func(func: GeneratorFunction, x: f32, params: [Option<f32>; 3]) -> f32 {
-//     match func {
-//         GeneratorFunction::SINE => sine(x),
-//         GeneratorFunction::PULSE => pulse(x, params.map(|p| unwrap_param(p))),
-//         GeneratorFunction::GAUSSIAN => gaussian(x, unwrap_param(params[0])),
-//         GeneratorFunction::SINC => sinc(x, unwrap_param(params[0])),
-//         GeneratorFunction::EXPONENTIAL => exponential(x, unwrap_param(params[0])),
-//     }
-// }
+fn calc_func(func: &GeneratorFunction, x: f32, params: [Option<f32>; 3]) -> f32 {
+    match func {
+        GeneratorFunction::SINE => sine(x),
+        GeneratorFunction::PULSE => pulse(x, params.map(|p| unwrap_param(p))),
+        GeneratorFunction::GAUSSIAN => gaussian(x, unwrap_param(params[0])),
+        GeneratorFunction::SINC => sinc(x, unwrap_param(params[0])),
+        GeneratorFunction::EXPONENTIAL => exponential(x, unwrap_param(params[0])),
+    }
+}
 
 fn unwrap_param(p: Option<f32>) -> f32 {
     match p {
