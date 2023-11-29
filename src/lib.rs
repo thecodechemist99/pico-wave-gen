@@ -187,7 +187,7 @@ define_enum_of_arrays! {
 }
 
 /// Available generator functions
-#[derive(Debug)]
+// #[derive(Debug)]
 pub enum GeneratorFunction {
     SINE,
     PULSE,
@@ -212,7 +212,7 @@ pub enum GeneratorFunction {
 // }
 
 /// Arbitrary waveform specification
-#[derive(Debug)]
+// #[derive(Debug)]
 pub struct Wave {
     /// Amplitude of the waveform
     pub amplitude: f32,
@@ -650,12 +650,9 @@ where
 
             Some((sm.start(), tx))
         }
-        Err(e) => {
+        Err(_) => {
             #[cfg(debug_assertions)]
-            defmt::error!(
-                "Error during PIO program installation: {}",
-                defmt::Debug2Format(&e)
-            );
+            defmt::error!("Error during PIO program installation");
 
             None
         }

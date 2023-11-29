@@ -28,7 +28,7 @@ const VERSION: &str = env!("CARGO_PKG_VERSION");
 /// Response to remote UI
 ///
 /// Either of type [ConnStatus] or [DeviceStatus]
-#[derive(Debug)]
+// #[derive(Debug)]
 #[allow(unused)]
 pub enum Response<'a> {
     ConnStatus(ConnStatus<'a>),
@@ -38,7 +38,8 @@ pub enum Response<'a> {
 /// Connection status flag:
 /// - [NotConnected](ConnStatusFlag::NotConnected): Not connected to remote UI
 /// - [Connected](ConnStatusFlag::Connected): Connected to remote UI
-#[derive(Serialize, Debug, Deserialize)]
+// #[derive(Serialize, Debug, Deserialize)]
+#[derive(Serialize, Deserialize)]
 #[allow(unused)]
 pub enum ConnStatusFlag {
     NotConnected,
@@ -52,7 +53,8 @@ pub enum ConnStatusFlag {
 /// - [Stopped](DeviceStatusFlag::Stopped): Generator output stopped, new set up trigger is allowed, initialisation status
 /// - [ConnReset](DeviceStatusFlag::ConnReset): Connection reset by remote UI
 /// - [Error](DeviceStatusFlag::Error): An error occured
-#[derive(Serialize, Debug, Deserialize)]
+// #[derive(Serialize, Debug, Deserialize)]
+#[derive(Serialize, Deserialize)]
 pub enum DeviceStatusFlag {
     Init,
     CalcWave,
@@ -63,7 +65,8 @@ pub enum DeviceStatusFlag {
 }
 
 /// Connection status
-#[derive(Serialize, Debug, Deserialize)]
+// #[derive(Serialize, Debug, Deserialize)]
+#[derive(Serialize, Deserialize)]
 pub struct ConnStatus<'a> {
     status: ConnStatusFlag,
     version: &'a str,
@@ -80,7 +83,9 @@ impl<'a> Default for ConnStatus<'a> {
     }
 }
 
-#[derive(Serialize, Debug, Deserialize)]
+/// Device status
+// #[derive(Serialize, Debug, Deserialize)]
+#[derive(Serialize, Deserialize)]
 pub struct DeviceStatus {
     status: DeviceStatusFlag,
     buf_len: u32,
@@ -119,7 +124,8 @@ struct WaveDef {
     func: GeneratorFunction,
 }
 
-#[derive(Serialize, Debug, Deserialize)]
+// #[derive(Serialize, Debug, Deserialize)]
+#[derive(Serialize, Deserialize)]
 pub struct Request<'a> {
     pub command: &'a str,
     pub freq: u32,
@@ -140,7 +146,7 @@ where
     I: StateMachineIndex,
 {
     #[cfg(debug_assertions)]
-    defmt::info!("receiving");
+    defmt::info!("Receiving data ...");
 
     let result: Result<(Request, usize), serde_json_core::de::Error> =
         serde_json_core::from_slice(&buf);
