@@ -80,7 +80,7 @@ use rp2040_hal::{
     gpio::{DynPinId, FunctionPio0, Pin, PullNone},
     pio::{
         PIOBuilder, PIOExt, PinDir, PinState, Running, ShiftDirection::Right, StateMachine,
-        StateMachineIndex, Stopped, Tx, UninitStateMachine, PIO,
+        StateMachineIndex, Tx, UninitStateMachine, PIO,
     },
     rom_data::float_funcs::{
         fadd, fcmp, fdiv, float_to_uint, fmul, fsub, int_to_float, uint_to_float,
@@ -211,6 +211,29 @@ impl FromStr for GeneratorFunction {
     }
 }
 
+impl GeneratorFunction {
+    fn calc(&self, x: f32, params: [Option<f32>; 3]) -> f32 {
+        match self {
+            GeneratorFunction::SINE => sine(x),
+            GeneratorFunction::PULSE => pulse(x, params.map(|p| unwrap_param(p))),
+            GeneratorFunction::GAUSSIAN => gaussian(x, unwrap_param(params[0])),
+            GeneratorFunction::SINC => sinc(x, unwrap_param(params[0])),
+            GeneratorFunction::EXPONENTIAL => exponential(x, unwrap_param(params[0])),
+        }
+    }
+}
+
+fn unwrap_param(p: Option<f32>) -> f32 {
+    match p {
+        Some(p) => p,
+        None => {
+            #[cfg(debug_assertions)]
+            defmt::error!("Expected parameter missing, replaced with 0.0");
+            0.0
+        }
+    }
+}
+
 /// Arbitrary waveform specification
 #[derive(Debug)]
 pub struct Wave {
@@ -312,26 +335,9 @@ fn eval(
     x = fsub(fmul(x, int_to_float(replicate)), phase);
     x = fsub(x, floorf(x)); // Reduce x to 0.0-1.0 range
 
-    let mut v = match func {
-        GeneratorFunction::SINE => sine(x),
-        GeneratorFunction::PULSE => pulse(x, params.map(|p| unwrap_param(p))),
-        GeneratorFunction::GAUSSIAN => gaussian(x, unwrap_param(params[0])),
-        GeneratorFunction::SINC => sinc(x, unwrap_param(params[0])),
-        GeneratorFunction::EXPONENTIAL => exponential(x, unwrap_param(params[0])),
-    };
+    let mut v = func.calc(x, params);
     v = fmul(v, amplitude);
     fadd(v, offset)
-}
-
-fn unwrap_param(p: Option<f32>) -> f32 {
-    match p {
-        Some(p) => p,
-        None => {
-            #[cfg(debug_assertions)]
-            defmt::error!("Expected parameter missing, replaced with 0.0");
-            0.0
-        }
-    }
 }
 
 /// Arbitrary waveform generator configuration
