@@ -381,68 +381,9 @@ where
 
     pub fn setup(&mut self, wave: Wave, buf: &mut SampleBuffer, freq: HertzU32) -> (usize, u32) {
         let clk_freq = uint_to_float(self.clk_freq.raw());
-        let freq = uint_to_float(freq.raw());
-        let buf_size = uint_to_float(buf.len() as u32);
 
-        let clk_div: f32;
-        let clk_div_int: u32;
-        let duplicate: u32;
-        let buf_len: usize;
-
-        // TODO: Fix breaking output in debug build when debug message is removed
-        #[cfg(debug_assertions)]
-        defmt::debug!("raw freq: {}", freq);
-
-        // Get required clock division for maximum buffer size
-        clk_div = fdiv(clk_freq, fmul(freq, buf_size));
-
-        match fcmp(clk_div, 1.0) {
-            -1 => {
-                // clk_div < 1.0
-                // Cannot speed up clock, duplicate wave instead
-                clk_div_int = 1;
-                duplicate = float_to_uint(fdiv(1.0, clk_div));
-
-                // Force sample count to multiple of 4
-                buf_len = float_to_uint(fdiv(
-                    fadd(fmul(buf_size, fmul(clk_div, uint_to_float(duplicate))), 0.5),
-                    4.0,
-                )) as usize
-                    * 4;
-            }
-            _ => {
-                // Apply required clock division, extend to next larger integer
-                clk_div_int = float_to_uint(clk_div) + 1;
-                duplicate = 1;
-
-                // Force sample count to multiple of 4
-                buf_len = float_to_uint(fadd(
-                    fmul(buf_size, fdiv(clk_div, uint_to_float(clk_div_int as u32))),
-                    0.5,
-                )) as usize
-                    * 4;
-            }
-        }
-
-        // Fill the buffer
-        for index in 0..buf_len {
-            let val = fmul(
-                uint_to_float(self.dac_res.get_size()),
-                wave.eval(fdiv(
-                    fmul(
-                        4.0, // Added factor of 4 to fix buffer issue
-                        fmul(
-                            uint_to_float(duplicate),
-                            fadd(uint_to_float(index as u32), 0.5),
-                        ),
-                    ),
-                    uint_to_float(buf_len as u32),
-                )),
-            ) as u32;
-
-            // Make sure value fits into DAC range
-            buf.insert(index, max(0, min(self.dac_res.get_max_value(), val)));
-        }
+        // Call generics free setup function
+        let (clk_div_int, buf_len, freq_out) = setup(wave, buf, freq, clk_freq, &self.dac_res);
 
         // Set the clock divisor
         // Only the int value is set, fractional clock division results in jitter.
@@ -450,14 +391,6 @@ where
 
         // Start DMA
         self.start_dma(buf, buf_len as u32 / 4);
-
-        let freq_out = float_to_uint(fmul(
-            fdiv(
-                fdiv(clk_freq, uint_to_float(clk_div_int)),
-                uint_to_float(buf_len as u32),
-            ),
-            uint_to_float(duplicate),
-        ));
 
         (buf_len, freq_out)
     }
@@ -563,6 +496,89 @@ where
         self.dma.0.ch().ch_al1_ctrl.write(|w| unsafe { w.bits(0) });
         self.dma.1.ch().ch_al1_ctrl.write(|w| unsafe { w.bits(0) });
     }
+}
+
+/// Generics free part of the [Config] setup method.
+/// Separated to optimise binary size.
+fn setup(
+    wave: Wave,
+    buf: &mut SampleBuffer,
+    freq: HertzU32,
+    clk_freq: f32,
+    dac_res: &DACResolution,
+) -> (u32, usize, u32) {
+    let freq = uint_to_float(freq.raw());
+    let buf_size = uint_to_float(buf.len() as u32);
+
+    let clk_div: f32;
+    let clk_div_int: u32;
+    let duplicate: u32;
+    let buf_len: usize;
+
+    // TODO: Fix breaking output in debug build when debug message is removed
+    #[cfg(debug_assertions)]
+    defmt::debug!("raw freq: {}", freq);
+
+    // Get required clock division for maximum buffer size
+    clk_div = fdiv(clk_freq, fmul(freq, buf_size));
+
+    match fcmp(clk_div, 1.0) {
+        -1 => {
+            // clk_div < 1.0
+            // Cannot speed up clock, duplicate wave instead
+            clk_div_int = 1;
+            duplicate = float_to_uint(fdiv(1.0, clk_div));
+
+            // Force sample count to multiple of 4
+            buf_len = float_to_uint(fdiv(
+                fadd(fmul(buf_size, fmul(clk_div, uint_to_float(duplicate))), 0.5),
+                4.0,
+            )) as usize
+                * 4;
+        }
+        _ => {
+            // Apply required clock division, extend to next larger integer
+            clk_div_int = float_to_uint(clk_div) + 1;
+            duplicate = 1;
+
+            // Force sample count to multiple of 4
+            buf_len = float_to_uint(fadd(
+                fmul(buf_size, fdiv(clk_div, uint_to_float(clk_div_int as u32))),
+                0.5,
+            )) as usize
+                * 4;
+        }
+    }
+
+    // Fill the buffer
+    for index in 0..buf_len {
+        let val = fmul(
+            uint_to_float(dac_res.get_size()),
+            wave.eval(fdiv(
+                fmul(
+                    4.0, // Added factor of 4 to fix buffer issue
+                    fmul(
+                        uint_to_float(duplicate),
+                        fadd(uint_to_float(index as u32), 0.5),
+                    ),
+                ),
+                uint_to_float(buf_len as u32),
+            )),
+        ) as u32;
+
+        // Make sure value fits into DAC range
+        buf.insert(index, max(0, min(dac_res.get_max_value(), val)));
+    }
+
+    let freq_out = float_to_uint(fmul(
+        fdiv(
+            fdiv(clk_freq, uint_to_float(clk_div_int)),
+            uint_to_float(buf_len as u32),
+        ),
+        uint_to_float(duplicate),
+    ));
+
+    (clk_div_int, buf_len, freq_out)
 }
 
 /// Setup PIO peripheral for AWG
