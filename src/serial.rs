@@ -141,6 +141,10 @@ where
 
     let (request, _): (Request, usize) = serde_json_core::from_slice(&buf).unwrap();
     match request.command {
+        "connect" => {
+            // Send status to remote UI
+            Response::DeviceStatus(device_status)
+        }
         "setup" => {
             // Setup waveform from received values
             let mut device_status = DeviceStatus::default();
