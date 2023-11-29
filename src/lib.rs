@@ -80,7 +80,7 @@ use rp2040_hal::{
     gpio::{DynPinId, FunctionPio0, Pin, PullNone},
     pio::{
         PIOBuilder, PIOExt, PinDir, PinState, Running, ShiftDirection::Right, StateMachine,
-        StateMachineIndex, Tx, UninitStateMachine, PIO,
+        StateMachineIndex, Stopped, Tx, UninitStateMachine, PIO,
     },
     rom_data::float_funcs::{
         fadd, fcmp, fdiv, float_to_uint, fmul, fsub, int_to_float, uint_to_float,
@@ -293,13 +293,34 @@ impl Wave {
 
         let mut v = match self.func {
             GeneratorFunction::SINE => sine(x),
-            GeneratorFunction::PULSE => pulse(x, self.params.map(|p| p.unwrap())),
-            GeneratorFunction::GAUSSIAN => gaussian(x, self.params[0].unwrap()),
-            GeneratorFunction::SINC => sinc(x, self.params[0].unwrap()),
-            GeneratorFunction::EXPONENTIAL => exponential(x, self.params[0].unwrap()),
+            GeneratorFunction::PULSE => pulse(x, self.params.map(|p| unwrap_param(p))),
+            GeneratorFunction::GAUSSIAN => gaussian(x, unwrap_param(self.params[0])),
+            GeneratorFunction::SINC => sinc(x, unwrap_param(self.params[0])),
+            GeneratorFunction::EXPONENTIAL => exponential(x, unwrap_param(self.params[0])),
         };
         v = fmul(v, self.amplitude);
         fadd(v, self.offset)
+    }
+}
+
+// fn calc_func(func: GeneratorFunction, x: f32, params: [Option<f32>; 3]) -> f32 {
+//     match func {
+//         GeneratorFunction::SINE => sine(x),
+//         GeneratorFunction::PULSE => pulse(x, params.map(|p| unwrap_param(p))),
+//         GeneratorFunction::GAUSSIAN => gaussian(x, unwrap_param(params[0])),
+//         GeneratorFunction::SINC => sinc(x, unwrap_param(params[0])),
+//         GeneratorFunction::EXPONENTIAL => exponential(x, unwrap_param(params[0])),
+//     }
+// }
+
+fn unwrap_param(p: Option<f32>) -> f32 {
+    match p {
+        Some(p) => p,
+        None => {
+            #[cfg(debug_assertions)]
+            defmt::error!("Expected parameter missing, replaced with 0.0");
+            0.0
+        }
     }
 }
 
@@ -335,15 +356,16 @@ where
         dma: (CH1, CH2),
         pio: &mut PIO<P>,
         sm: UninitStateMachine<(P, I)>,
-    ) -> Self {
-        let (sm, tx_buf) = setup_pio(pio, dac_pins, sm);
-
-        Self {
-            clk_freq,
-            dac_res,
-            dma,
-            sm,
-            tx_buf,
+    ) -> Option<Self> {
+        match setup_pio(pio, dac_pins, sm) {
+            Some((sm, tx_buf)) => Some(Self {
+                clk_freq,
+                dac_res,
+                dma,
+                sm,
+                tx_buf,
+            }),
+            None => None,
         }
     }
 
@@ -539,7 +561,7 @@ fn setup_pio<P, I>(
     pio: &mut PIO<P>,
     mut pins: DACPins,
     sm: UninitStateMachine<(P, I)>,
-) -> (StateMachine<(P, I), Running>, Tx<(P, I)>)
+) -> Option<(StateMachine<(P, I), Running>, Tx<(P, I)>)>
 where
     P: PIOExt,
     I: StateMachineIndex,
@@ -553,36 +575,79 @@ where
     // }
 
     // Setup PIO
-    let installed = pio.install(&program.program).unwrap();
+    let installed = pio.install(&program.program);
     let (int, frac) = (0, 0); // As slow as possible (0 is interpreted as 65536)
-    let (mut sm, _, tx) = PIOBuilder::from_program(installed)
-        .out_pins(pins.get(0).id().num, pins.len() as u8)
-        .clock_divisor_fixed_point(int, frac)
-        .out_shift_direction(Right)
-        .autopull(true)
-        .pull_threshold(32)
-        .build(sm);
 
-    match pins {
-        DACPins::BIT8(p) => {
-            let pin_dirs: [(u8, PinDir); 8] =
-                array::from_fn(|i| (p.get(i).unwrap().id().num, PinDir::Output));
-            let pin_states: [(u8, PinState); 8] =
-                array::from_fn(|i| (p.get(i).unwrap().id().num, PinState::Low));
+    match installed {
+        Ok(program) => {
+            let (mut sm, _, tx) = PIOBuilder::from_program(program)
+                .out_pins(pins.get(0).id().num, pins.len() as u8)
+                .clock_divisor_fixed_point(int, frac)
+                .out_shift_direction(Right)
+                .autopull(true)
+                .pull_threshold(32)
+                .build(sm);
 
-            sm.set_pindirs(pin_dirs);
-            sm.set_pins(pin_states);
+            match pins {
+                DACPins::BIT8(p) => {
+                    let pin_dirs: [(u8, PinDir); 8] = array::from_fn(|i| {
+                        (
+                            match p.get(i) {
+                                Some(p) => p.id().num,
+                                None => 0,
+                            },
+                            PinDir::Output,
+                        )
+                    });
+                    let pin_states: [(u8, PinState); 8] = array::from_fn(|i| {
+                        (
+                            match p.get(i) {
+                                Some(p) => p.id().num,
+                                None => 0,
+                            },
+                            PinState::Low,
+                        )
+                    });
+
+                    sm.set_pindirs(pin_dirs);
+                    sm.set_pins(pin_states);
+                }
+
+                DACPins::BIT10(p) => {
+                    let pin_dirs: [(u8, PinDir); 10] = array::from_fn(|i| {
+                        (
+                            match p.get(i) {
+                                Some(p) => p.id().num,
+                                None => 0,
+                            },
+                            PinDir::Output,
+                        )
+                    });
+                    let pin_states: [(u8, PinState); 10] = array::from_fn(|i| {
+                        (
+                            match p.get(i) {
+                                Some(p) => p.id().num,
+                                None => 0,
+                            },
+                            PinState::Low,
+                        )
+                    });
+
+                    sm.set_pindirs(pin_dirs);
+                    sm.set_pins(pin_states);
+                }
+            }
+
+            Some((sm.start(), tx))
         }
+        Err(e) => {
+            #[cfg(debug_assertions)]
+            defmt::error!(
+                "Error during PIO program installation: {}",
+                defmt::Debug2Format(&e)
+            );
 
-        DACPins::BIT10(p) => {
-            let pin_dirs: [(u8, PinDir); 10] =
-                array::from_fn(|i| (p.get(i).unwrap().id().num, PinDir::Output));
-            let pin_states: [(u8, PinState); 10] =
-                array::from_fn(|i| (p.get(i).unwrap().id().num, PinState::Low));
-
-            sm.set_pindirs(pin_dirs);
-            sm.set_pins(pin_states);
+            None
         }
     }
-    (sm.start(), tx)
 }

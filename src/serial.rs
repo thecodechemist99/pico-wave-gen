@@ -129,7 +129,10 @@ pub struct Request<'a> {
 }
 
 #[cfg(feature = "pico")]
-pub fn receive<'a, CH1, CH2, P, I>(conf: &mut Config<CH1, CH2, P, I>, buf: &[u8]) -> Response<'a>
+pub fn receive<'a, CH1, CH2, P, I>(
+    conf: &mut Config<CH1, CH2, P, I>,
+    buf: &[u8],
+) -> Result<Response<'a>, serde_json_core::de::Error>
 where
     CH1: SingleChannel,
     CH2: SingleChannel,
@@ -139,71 +142,89 @@ where
     #[cfg(debug_assertions)]
     defmt::info!("receiving");
 
-    let (request, _): (Request, usize) = serde_json_core::from_slice(&buf).unwrap();
-    match request.command {
-        "connect" => {
-            // Send status to remote UI
-            Response::DeviceStatus(DeviceStatus {
-                status: DeviceStatusFlag::Init,
-                buf_len: 0,
-                freq_out: 0,
-            })
-        }
-        "setup" => {
-            // Setup waveform from received values
-            let mut device_status = DeviceStatus::default();
-            device_status.status = DeviceStatusFlag::CalcWave;
+    let result: Result<(Request, usize), serde_json_core::de::Error> =
+        serde_json_core::from_slice(&buf);
 
-            let wave_buf = singleton!(: SampleBuffer =
-                match request.buf_size {
-                    256 => SampleBuffer::B256([0; 256]),
-                    1024 => SampleBuffer::B1K([0; 1024]),
-                    2048 => SampleBuffer::B2K([0; 2048]),
-                    4096 => SampleBuffer::B4K([0; 4096]),
-                    8192 => SampleBuffer::B8K([0; 8192]),
-                    16_384 => SampleBuffer::B16K([0; 16_384]),
-                    32_768 => SampleBuffer::B32K([0; 32_768]),
-                    65_536 => SampleBuffer::B64k([0; 65_536]),
-                    _ => SampleBuffer::B512([0; 512]),
-            })
-            .unwrap();
+    match result {
+        Err(e) => Err(e),
+        Ok((request, _)) => {
+            match request.command {
+                "connect" => {
+                    // Send status to remote UI
+                    Ok(Response::DeviceStatus(DeviceStatus {
+                        status: DeviceStatusFlag::Init,
+                        buf_len: 0,
+                        freq_out: 0,
+                    }))
+                }
+                "setup" => {
+                    // Setup waveform from received values
+                    let mut device_status = DeviceStatus::default();
+                    device_status.status = DeviceStatusFlag::CalcWave;
 
-            let setup_status = conf.setup(request.wave, wave_buf, request.freq.Hz());
+                    let wave_buf = singleton!(: SampleBuffer =
+                        match request.buf_size {
+                            256 => SampleBuffer::B256([0; 256]),
+                            1024 => SampleBuffer::B1K([0; 1024]),
+                            2048 => SampleBuffer::B2K([0; 2048]),
+                            4096 => SampleBuffer::B4K([0; 4096]),
+                            8192 => SampleBuffer::B8K([0; 8192]),
+                            16_384 => SampleBuffer::B16K([0; 16_384]),
+                            32_768 => SampleBuffer::B32K([0; 32_768]),
+                            65_536 => SampleBuffer::B64k([0; 65_536]),
+                            _ => SampleBuffer::B512([0; 512]),
+                    });
 
-            device_status.status = DeviceStatusFlag::Running;
-            device_status.buf_len = setup_status.0 as u32;
-            device_status.freq_out = setup_status.1;
+                    match wave_buf {
+                        Some(wave_buf) => {
+                            // Device set up successfully
+                            let setup_status =
+                                conf.setup(request.wave, wave_buf, request.freq.Hz());
 
-            // Send status to remote UI
-            Response::DeviceStatus(device_status)
-        }
-        "stop" => {
-            // Stop the generator output and send status to remote UI
-            conf.stop_dma();
+                            device_status.status = DeviceStatusFlag::Running;
+                            device_status.buf_len = setup_status.0 as u32;
+                            device_status.freq_out = setup_status.1;
+                        }
+                        None => {
+                            // Error setting up device
+                            device_status.status = DeviceStatusFlag::Error;
+                            device_status.buf_len = 0;
+                            device_status.freq_out = 0;
+                        }
+                    }
 
-            Response::DeviceStatus(DeviceStatus {
-                status: DeviceStatusFlag::Stopped,
-                buf_len: 0,
-                freq_out: 0,
-            })
-        }
-        "disconnect" => {
-            // Stop the generator output, send status to remote UI and restart the AWG
-            conf.stop_dma();
-            Response::DeviceStatus(DeviceStatus {
-                status: DeviceStatusFlag::ConnReset,
-                buf_len: 0,
-                freq_out: 0,
-            })
-            // reset();
-        }
-        _ => {
-            // Send status to remote UI
-            Response::DeviceStatus(DeviceStatus {
-                status: DeviceStatusFlag::Error,
-                buf_len: 0,
-                freq_out: 0,
-            })
+                    // Send status to remote UI
+                    Ok(Response::DeviceStatus(device_status))
+                }
+                "stop" => {
+                    // Stop the generator output and send status to remote UI
+                    conf.stop_dma();
+
+                    Ok(Response::DeviceStatus(DeviceStatus {
+                        status: DeviceStatusFlag::Stopped,
+                        buf_len: 0,
+                        freq_out: 0,
+                    }))
+                }
+                "disconnect" => {
+                    // Stop the generator output, send status to remote UI and restart the AWG
+                    conf.stop_dma();
+                    Ok(Response::DeviceStatus(DeviceStatus {
+                        status: DeviceStatusFlag::ConnReset,
+                        buf_len: 0,
+                        freq_out: 0,
+                    }))
+                    // reset();
+                }
+                _ => {
+                    // Send status to remote UI
+                    Ok(Response::DeviceStatus(DeviceStatus {
+                        status: DeviceStatusFlag::Error,
+                        buf_len: 0,
+                        freq_out: 0,
+                    }))
+                }
+            }
         }
     }
 }
