@@ -143,7 +143,11 @@ where
     match request.command {
         "connect" => {
             // Send status to remote UI
-            Response::DeviceStatus(device_status)
+            Response::DeviceStatus(DeviceStatus {
+                status: DeviceStatusFlag::Init,
+                buf_len: 0,
+                freq_out: 0,
+            })
         }
         "setup" => {
             // Setup waveform from received values
